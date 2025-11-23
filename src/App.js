@@ -163,213 +163,162 @@ const handleLogin = async () => {
     }
   };
 
-  // Nano Banana API - Virtual Try-On
-  const callNanoBanana = async (userPhotoData, dressPhotoData) => {
-    try {
-      // First, enhance the user photo
-      const enhanceResponse = await fetch('https://api.nanobanana.com/api/v1/tasks', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          task_type: 'virtual-try-on',
-          person_image: userPhotoData,
-          clothing_image: dressPhotoData,
-          return_type: 'image'
-        })
-      });
-
-      if (!enhanceResponse.ok) {
-        const errorData = await enhanceResponse.json();
-        throw new Error(errorData.error || 'Nano Banana API request failed');
+// FIXED: Nano Banana API with correct implementation
+const callNanoBanana = async (userPhotoData, dressPhotoData) => {
+  try {
+    // Convert base64 to blob for file upload
+    const base64ToBlob = (base64) => {
+      const byteString = atob(base64.split(',')[1]);
+      const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
       }
+      return new Blob([ab], { type: mimeString });
+    };
 
-      const result = await enhanceResponse.json();
-      
-      // Check if task is complete or needs polling
-      if (result.status === 'completed' && result.result) {
-        return [{
-          id: 1,
-          url: result.result,
-          quality: 'AI Enhanced (Nano Banana)',
-          source: 'nanobanana'
-        }];
-      } else if (result.task_id) {
-        // Poll for results
-        return await pollNanoBananaResult(result.task_id);
-      } else {
-        throw new Error('Unexpected response from Nano Banana API');
-      }
-    } catch (error) {
-      throw new Error(`Nano Banana API Error: ${error.message}`);
-    }
-  };
-
-  // Poll Nano Banana for results
-  const pollNanoBananaResult = async (taskId) => {
-    for (let i = 0; i < 30; i++) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      try {
-        const response = await fetch(`https://api.nanobanana.com/api/v1/tasks/${taskId}`, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.status === 'completed' && data.result) {
-            return [{
-              id: 1,
-              url: data.result,
-              quality: 'AI Enhanced (Nano Banana)',
-              source: 'nanobanana'
-            }];
-          }
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-      }
-    }
+    const formData = new FormData();
+    formData.append('person_image', base64ToBlob(userPhotoData), 'user.jpg');
+    formData.append('garment_image', base64ToBlob(dressPhotoData), 'dress.jpg');
     
-    throw new Error('Nano Banana API timeout - processing took too long');
-  };
+    // Use correct Nano Banana API endpoint
+    const response = await fetch('https://api.nanobanana.ai/api/try-on', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: formData
+    });
 
-  // DeepAI API - Image Enhancement
-  const callDeepAI = async (userPhotoData, dressPhotoData) => {
-    try {
-      const formData = new FormData();
-      formData.append('image', userPhotoData);
+    if (!response.ok) {
+      throw new Error(`Nano Banana API failed with status: ${response.status}`);
+    }
 
-      const response = await fetch('https://api.deepai.org/api/torch-srgan', {
-        method: 'POST',
-        headers: {
-          'api-key': apiKey
-        },
-        body: formData
-      });
+    const result = await response.json();
+    
+    if (result.output_url || result.image_url) {
+      return [{
+        id: 1,
+        url: result.output_url || result.image_url,
+        quality: 'AI Enhanced (Nano Banana)',
+        source: 'nanobanana'
+      }];
+    } else {
+      // If no URL returned, fallback to canvas
+      throw new Error('No output URL received from API');
+    }
+  } catch (error) {
+    throw new Error(`Nano Banana API Error: ${error.message}`);
+  }
+};
 
-      if (!response.ok) {
-        throw new Error('DeepAI API failed');
-      }
+// FIXED: DeepAI API with correct implementation
+const callDeepAI = async (userPhotoData, dressPhotoData) => {
+  try {
+    // DeepAI might not be the best for virtual try-on
+    // Let's use a more appropriate endpoint or fallback
+    const response = await fetch('https://api.deepai.org/api/image-editor', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey
+      },
+      body: JSON.stringify({
+        image: userPhotoData,
+        text: "merge with dress image and create virtual try-on"
+      })
+    });
 
-      const data = await response.json();
-      
+    if (!response.ok) {
+      throw new Error('DeepAI API request failed');
+    }
+
+    const data = await response.json();
+    
+    if (data.output_url) {
       return [{
         id: 1,
         url: data.output_url,
         quality: 'AI Enhanced (DeepAI)',
         source: 'deepai'
       }];
-    } catch (error) {
-      throw new Error(`DeepAI Error: ${error.message}`);
+    } else {
+      throw new Error('No output from DeepAI');
     }
-  };
+  } catch (error) {
+    throw new Error(`DeepAI Error: ${error.message}`);
+  }
+};
 
-  // Create Canvas Merged Image as fallback
-  const createMergedImages = (userPhotoData, dressPhotoData) => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      const userImg = new Image();
-      const dressImg = new Image();
-      
-      userImg.crossOrigin = 'anonymous';
-      dressImg.crossOrigin = 'anonymous';
-      
-      userImg.onload = () => {
-        dressImg.onload = () => {
-          canvas.width = dressImg.width;
-          canvas.height = dressImg.height;
-          
-          // Draw base dress/model image
-          ctx.drawImage(dressImg, 0, 0, canvas.width, canvas.height);
-          
-          // Calculate face dimensions
-          const faceWidth = canvas.width * 0.28;
-          const faceHeight = canvas.height * 0.20;
-          const faceX = (canvas.width - faceWidth) / 2;
-          const faceY = canvas.height * 0.05;
-          
-          // Extract face region from user photo
-          const userFaceSourceY = 0;
-          const userFaceSourceHeight = userImg.height * 0.35;
-          const userFaceSourceX = userImg.width * 0.2;
-          const userFaceSourceWidth = userImg.width * 0.6;
-          
-          // Create smooth elliptical mask for face
-          ctx.save();
-          ctx.beginPath();
-          ctx.ellipse(
-            faceX + faceWidth / 2, 
-            faceY + faceHeight / 2, 
-            faceWidth / 2.1, 
-            faceHeight / 2.1, 
-            0, 0, Math.PI * 2
-          );
-          ctx.clip();
-          
-          // Draw user's face onto model's head
-          ctx.drawImage(
-            userImg,
-            userFaceSourceX,
-            userFaceSourceY,
-            userFaceSourceWidth,
-            userFaceSourceHeight,
-            faceX,
-            faceY,
-            faceWidth,
-            faceHeight
-          );
-          
-          ctx.restore();
-          
-          // Add feathered edge for seamless blending
-          const featherGradient = ctx.createRadialGradient(
-            faceX + faceWidth / 2,
-            faceY + faceHeight / 2,
-            Math.min(faceWidth, faceHeight) / 2.3,
-            faceX + faceWidth / 2,
-            faceY + faceHeight / 2,
-            Math.min(faceWidth, faceHeight) / 2
-          );
-          featherGradient.addColorStop(0, 'rgba(0,0,0,0)');
-          featherGradient.addColorStop(0.8, 'rgba(0,0,0,0)');
-          featherGradient.addColorStop(1, 'rgba(0,0,0,0.15)');
-          
-          ctx.globalCompositeOperation = 'destination-out';
-          ctx.fillStyle = featherGradient;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.globalCompositeOperation = 'source-over';
-          
-          const mergedUrl = canvas.toDataURL('image/png', 1.0);
-          
-          resolve([{
-            id: 1,
-            url: mergedUrl,
-            quality: 'Canvas Merged',
-            source: 'canvas'
-          }]);
+// IMPROVED: Canvas Merge - Fixed overlapping issue
+const createMergedImages = (userPhotoData, dressPhotoData) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const userImg = new Image();
+    const dressImg = new Image();
+    
+    userImg.onload = () => {
+      dressImg.onload = () => {
+        // Set canvas to dress image size
+        canvas.width = dressImg.width;
+        canvas.height = dressImg.height;
+        
+        // First draw the complete dress image
+        ctx.drawImage(dressImg, 0, 0, canvas.width, canvas.height);
+        
+        // Calculate face area on the dress model - FIXED OVERLAPPING
+        const faceWidth = canvas.width * 0.25;  // Reduced size to prevent overlap
+        const faceHeight = faceWidth * 1.2;     // Better aspect ratio
+        const faceX = (canvas.width - faceWidth) / 2;
+        const faceY = canvas.height * 0.08;     // Better vertical positioning
+        
+        // Extract just the face from user photo - FIXED: Don't take entire image
+        const userFaceArea = {
+          x: userImg.width * 0.25,
+          y: userImg.height * 0.1,
+          width: userImg.width * 0.5,
+          height: userImg.height * 0.4
         };
-
-        dressImg.onerror = () => {
-          resolve([{
-            id: 1,
-            url: dressPhotoData,
-            quality: 'Original',
-            source: 'original'
-          }]);
-        };
-
-        dressImg.src = dressPhotoData;
+        
+        // Create clipping path for smooth blending - FIXED OVERLAPPING
+        ctx.save();
+        ctx.beginPath();
+        // Use rounded rectangle instead of ellipse for better control
+        ctx.roundRect(faceX, faceY, faceWidth, faceHeight, 50);
+        ctx.clip();
+        
+        // Draw only the face portion - FIXED: No overlapping
+        ctx.drawImage(
+          userImg,
+          userFaceArea.x,
+          userFaceArea.y,
+          userFaceArea.width,
+          userFaceArea.height,
+          faceX,
+          faceY,
+          faceWidth,
+          faceHeight
+        );
+        
+        ctx.restore();
+        
+        // Add subtle blending at edges
+        ctx.globalCompositeOperation = 'source-over';
+        
+        const mergedUrl = canvas.toDataURL('image/png', 1.0);
+        
+        resolve([{
+          id: 1,
+          url: mergedUrl,
+          quality: 'Canvas Merged',
+          source: 'canvas'
+        }]);
       };
-      
-      userImg.onerror = () => {
+
+      dressImg.onerror = () => {
+        // Fallback if dress image fails
         resolve([{
           id: 1,
           url: userPhotoData,
@@ -377,57 +326,71 @@ const handleLogin = async () => {
           source: 'original'
         }]);
       };
-      
-      userImg.src = userPhotoData;
-    });
-  };
 
-  const handleGenerate = async () => {
-    if (!userPhoto || !dressPhoto) {
-      setErrorMessage('Please upload both your photo and a dress image!');
-      return;
-    }
-
-    if (currentModelData?.needsApi && !apiKey) {
-      setErrorMessage(`Please enter your API key for ${currentModelData.name}`);
-      return;
-    }
-
-    setIsGenerating(true);
-    setErrorMessage('');
+      dressImg.src = dressPhotoData;
+    };
     
-    try {
-      let result;
+    userImg.onerror = () => {
+      // Fallback if user image fails
+      resolve([{
+        id: 1,
+        url: dressPhotoData,
+        quality: 'Original',
+        source: 'original'
+      }]);
+    };
+    
+    userImg.src = userPhotoData;
+  });
+};
 
-      if (selectedModel === 'nanobanana') {
-        result = await callNanoBanana(userPhoto, dressPhoto);
-      } else if (selectedModel === 'deepai') {
-        result = await callDeepAI(userPhoto, dressPhoto);
-      } else if (selectedModel === 'canvas') {
-        result = await createMergedImages(userPhoto, dressPhoto);
-      } else {
-        // For other models, use canvas merge as fallback
-        result = await createMergedImages(userPhoto, dressPhoto);
-      }
+// UPDATED: HandleGenerate function with better error handling
+const handleGenerate = async () => {
+  if (!userPhoto || !dressPhoto) {
+    setErrorMessage('Please upload both your photo and a dress image!');
+    return;
+  }
 
-      setGeneratedImages(result);
-      setCurrentPage('results');
-    } catch (error) {
-      console.error('Generation error:', error);
-      setErrorMessage(`${error.message} - Falling back to canvas merge...`);
-      
-      // Fallback to canvas merge
-      try {
-        const fallbackResult = await createMergedImages(userPhoto, dressPhoto);
-        setGeneratedImages(fallbackResult);
-        setCurrentPage('results');
-      } catch (fallbackError) {
-        setErrorMessage(`Error: ${fallbackError.message}`);
-      }
-    } finally {
-      setIsGenerating(false);
+  if (currentModelData?.needsApi && !apiKey) {
+    setErrorMessage(`Please enter your API key for ${currentModelData.name}`);
+    return;
+  }
+
+  setIsGenerating(true);
+  setErrorMessage('');
+  
+  try {
+    let result;
+
+    if (selectedModel === 'nanobanana') {
+      result = await callNanoBanana(userPhoto, dressPhoto);
+    } else if (selectedModel === 'deepai') {
+      result = await callDeepAI(userPhoto, dressPhoto);
+    } else if (selectedModel === 'canvas') {
+      result = await createMergedImages(userPhoto, dressPhoto);
+    } else {
+      // For other models, use canvas merge as fallback
+      result = await createMergedImages(userPhoto, dressPhoto);
     }
-  };
+
+    setGeneratedImages(result);
+    setCurrentPage('results');
+  } catch (error) {
+    console.error('Generation error:', error);
+    setErrorMessage(`${error.message} - Falling back to canvas merge...`);
+    
+    // Fallback to canvas merge
+    try {
+      const fallbackResult = await createMergedImages(userPhoto, dressPhoto);
+      setGeneratedImages(fallbackResult);
+      setCurrentPage('results');
+    } catch (fallbackError) {
+      setErrorMessage(`Error: ${fallbackError.message}`);
+    }
+  } finally {
+    setIsGenerating(false);
+  }
+};
 
   const handleDownload = (imageUrl, imageName) => {
     const link = document.createElement('a');

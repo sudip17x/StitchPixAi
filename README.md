@@ -1,70 +1,286 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# 🌟 **Replix AI – Virtual Try-On Web App**
 
-## Available Scripts
+**Upload Your Photo + A Dress Photo → Get AI-Generated Try-On Results**
 
-In the project directory, you can run:
+Replix AI is a **React + Node.js powered virtual try-on application** that allows users to upload their own face photo along with a dress/model image, and generate an AI-enhanced output showing how they would look wearing the outfit.
 
-### `npm start`
+This project integrates **multiple AI APIs** (NanoBanana, DeepAI, Replicate/HuggingFace optional), with a fallback **Canvas merge engine** to ensure results even without API keys.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+# 🚀 **Features**
 
-### `npm test`
+### 🔐 **Authentication**
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+* Local login & signup (email + password)
+* Client-side user management
+* Secure password hashing
+* Session persistence
 
-### `npm run build`
+### 🖼 **Smart Image Upload System**
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+* Upload user face photo
+* Upload dress/model photo
+* Validates and previews images
+* Clean UI for selecting images
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 🤖 **AI Engines Supported**
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+You can select different AI engines in the UI:
 
-### `npm run eject`
+| Model                               | Requires API Key | Description                                 |
+| ----------------------------------- | ---------------- | ------------------------------------------- |
+| Canvas Merge (Free)                 | ❌                | Local face-overlay fallback (works offline) |
+| NanoBanana API                      | ✔                | Real virtual try-on AI                      |
+| DeepAI                              | ✔                | Image enhancement                           |
+| Hugging Face (Optional)             | ✔                | Community ML models                         |
+| Replicate API (Optional)            | ✔                | Diffusion-based try-on                      |
+| Stability AI (Optional)             | ✔                | Image generation                            |
+| AWS / GCP / Azure Vision (Optional) | ✔                | Advanced ML                                 |
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 🎨 **Canvas Fallback Engine**
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+If user has no API key for premium engines, the system:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+* Detects the face
+* Cuts and blends it on the model image
+* Uses elliptical clipping + feather edges
+* Generates a smooth merged result
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 🖥 **Backend Server (Node.js)**
 
-## Learn More
+Handles secure API calls for:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+* NanoBanana Virtual Try-On
+* DeepAI Image Upscale
+  (Prevents exposing API keys in frontend)
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 📤 **Results Page**
 
-### Code Splitting
+* Displays AI-generated output
+* Download button
+* Share button
+* Try another outfit button
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+# 📂 **Project Structure**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```
+replix-ai/
+│
+├── src/
+│   ├── App.js
+│   ├── components/
+│   ├── pages/
+│   ├── assets/
+│   └── ...
+│
+├── server/
+│   ├── index.js      // Backend API integrations
+│   └── package.json
+│
+├── package.json       // React dependencies
+└── README.md
+```
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+# ⚙️ **Tech Stack**
 
-### Advanced Configuration
+### **Frontend**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+* React (CRA)
+* React 18 + react-scripts 5.0.1
+* Tailwind CSS
+* lucide-react icons
+* FileReader API for image preview
+* Canvas 2D for fallback face merge
 
-### Deployment
+### **Backend**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+* Node.js
+* Express.js
+* Axios
+* CORS enabled
+* Handles AI API requests securely
 
-### `npm run build` fails to minify
+### **AI APIs**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+* NanoBanana (Virtual Try-On)
+* DeepAI (Enhancement)
+* HuggingFace / Replicate (optional)
+* Stability AI (optional)
+
+---
+
+# 🔧 **How to Install & Run the Project**
+
+## 1️⃣ Clone this repository
+
+```
+git clone https://github.com/yourusername/replix-ai.git
+cd replix-ai
+```
+
+---
+
+# 🟦 **Frontend Setup (React)**
+
+### Install dependencies:
+
+```
+npm install
+```
+
+### Start React development server:
+
+```
+npm start
+```
+
+App runs at:
+
+```
+http://localhost:3000
+```
+
+---
+
+# 🟩 **Backend Setup (Node.js)**
+
+### Go to backend folder:
+
+```
+cd server
+```
+
+### Install backend packages:
+
+```
+npm install
+```
+
+### Start backend server:
+
+```
+node index.js
+```
+
+Backend runs at:
+
+```
+http://localhost:5000
+```
+
+---
+
+# 🔑 **API Keys Setup**
+
+To use AI engines (NanoBanana, DeepAI, etc.):
+
+1. Open the app
+2. Choose "AI Model"
+3. Click "Enter API Key"
+4. Paste your API key
+
+Keys are stored **locally on the browser**, not uploaded anywhere.
+
+---
+
+# 🧪 **Test the App**
+
+1. Go to **Upload Page**
+2. Upload:
+
+   * A face photo
+   * A dress/model photo
+3. Select your AI engine
+4. Click **Generate**
+5. View final AI-generated try-on image
+
+---
+
+# 🛠 Full Backend API Endpoints
+
+### POST `/api/nanobanana`
+
+Body:
+
+```json
+{
+  "userPhoto": "data:image/png;base64,....",
+  "dressPhoto": "data:image/png;base64,...",
+  "apiKey": "YOUR_KEY"
+}
+```
+
+### POST `/api/deepai`
+
+Body:
+
+```json
+{
+  "userPhoto": "data:image/png;base64,...",
+  "apiKey": "YOUR_KEY"
+}
+```
+
+---
+
+# 🧩 **Why Backend is Needed**
+
+AI providers block:
+
+* Browser requests
+* Base64 uploads
+* Secret API keys
+
+So the backend:
+✔ Avoids CORS issues
+✔ Hides API keys
+✔ Handles file requests
+✔ Provides secure endpoints
+
+---
+
+# 📸 **Screenshots** *(Add your own)*
+
+```
+[ Add: Upload Page Screenshot ]
+[ Add: AI Model Dropdown Screenshot ]
+[ Add: Generated Output Screenshot ]
+```
+
+---
+
+# 🧭 **Roadmap**
+
+* [ ] Add Replicate SDXL virtual try-on
+* [ ] Add HuggingFace try-on models
+* [ ] Add Cloudinary upload support
+* [ ] Add real account system (Firebase Auth)
+* [ ] Add user history & gallery
+* [ ] Deploy Backend on Render
+* [ ] Deploy React App on Vercel
+
+---
+
+# 🤝 **Contributing**
+
+Contributions are welcome!
+Feel free to submit pull requests or fork the repo.
+
+---
+
+# 📝 **License**
+
+This project is licensed under the **MIT License**.
+
+---
+
+# ⭐ **If you like this project — please Star the repo!**
+
+Your support motivates further development.
+

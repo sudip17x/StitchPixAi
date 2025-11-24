@@ -42,10 +42,6 @@ export default function StitchPixAI() {
   const allModels = [...aiModels.free, ...aiModels.paid];
   const currentModelData = allModels.find(m => m.id === selectedModel);
 
-  React.useEffect(() => {
-    setUsers([]);
-  }, []);
-
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);

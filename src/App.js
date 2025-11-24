@@ -3,7 +3,6 @@ import { Upload, ImageIcon, Sparkles, Download, Share2, RefreshCw, LogOut, Chevr
 
 export default function StitchPixAI() {
   // User Management State
-  const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState('login');
   const [isSignUp, setIsSignUp] = useState(false);
   const [user, setUser] = useState(null);
@@ -46,16 +45,6 @@ export default function StitchPixAI() {
   React.useEffect(() => {
     setUsers([]);
   }, []);
-
-  const hashPassword = (password) => {
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-      const char = password.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return hash.toString();
-  };
 
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
